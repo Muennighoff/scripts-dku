@@ -262,15 +262,13 @@ BLOOM_LANGS = """
 """
 
 bloom_lang_codes = []
-bloom_codes_tmp = []
 for lang in BLOOM_LANGS.split("\n")[1:-1]:
     lang = lang.replace("- ", "")
-    bloom_lang_codes.append(lang) # Also append iso2
+    bloom_lang_codes.append(lang) # Also append iso2 for langs not found like fon
     try:
         name = languages.get(alpha2=lang)
     except KeyError:
         print(f"Could not find code {lang}. Skipping...")
-        bloom_codes_tmp.append(lang)
         continue
     bloom_lang_codes.append(name.part3)
 
@@ -326,27 +324,24 @@ def add_langs(l1):
         elif l1_name == l2_name:
             continue
 
-        if (l1_code.split("_")[0] in bloom_codes_tmp) or (l2_code.split("_")[0] in bloom_codes_tmp):
-            print(f"Doing {l1_name} and {l2_name}.")
+        subset_name = f"{l1_code}-{l2_code}"
+        template_collection = TemplateCollection()
+        target_templates = template_collection.get_dataset("facebook/flores", subset_name)
 
-            subset_name = f"{l1_code}-{l2_code}"
-            template_collection = TemplateCollection()
-            target_templates = template_collection.get_dataset("facebook/flores", subset_name)
+        template_name = "prev-" + l1_code + "-" + l2_code
+        jinja = PREV_PROMPT.format(l1_code, l1_name, l2_name, l2_code)
+        target_template = Template(template_name, jinja, "")
+        target_templates.add_template(target_template)
 
-            template_name = "prev-" + l1_code + "-" + l2_code
-            jinja = PREV_PROMPT.format(l1_code, l1_name, l2_name, l2_code)
-            target_template = Template(template_name, jinja, "")
-            target_templates.add_template(target_template)
+        template_name = "in-" + l1_code + "-" + l2_code
+        jinja = IN_PROMPT.format(l1_code, l2_name, l2_code)
+        target_template = Template(template_name, jinja, "")
+        target_templates.add_template(target_template)
 
-            template_name = "in-" + l1_code + "-" + l2_code
-            jinja = IN_PROMPT.format(l1_code, l2_name, l2_code)
-            target_template = Template(template_name, jinja, "")
-            target_templates.add_template(target_template)
-
-            template_name = "ab-" + l1_code + "-" + l2_code
-            jinja = AB_PROMPT.format(l1_name, l1_code, l2_name, l2_code)
-            target_template = Template(template_name, jinja, "")
-            target_templates.add_template(target_template)
+        template_name = "ab-" + l1_code + "-" + l2_code
+        jinja = AB_PROMPT.format(l1_name, l1_code, l2_name, l2_code)
+        target_template = Template(template_name, jinja, "")
+        target_templates.add_template(target_template)
 
 
 with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
