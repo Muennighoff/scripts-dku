@@ -2,6 +2,7 @@ from iso639 import languages
 
 from promptsource.templates import Template, TemplateCollection
 
+
 langs = [
     ("Acehnese (Arabic script)", "ace_Arab"),
     ("Acehnese (Latin script)", "ace_Latn"),
@@ -264,7 +265,7 @@ BLOOM_LANGS = """
 bloom_lang_codes = []
 for lang in BLOOM_LANGS.split("\n")[1:-1]:
     lang = lang.replace("- ", "")
-    bloom_lang_codes.append(lang) # Also append iso2 for langs not found like fon
+    bloom_lang_codes.append(lang) # Also append iso2
     try:
         name = languages.get(alpha2=lang)
     except KeyError:
@@ -272,8 +273,11 @@ for lang in BLOOM_LANGS.split("\n")[1:-1]:
         continue
     bloom_lang_codes.append(name.part3)
 
-# Discrepencies
+# Discrepencies (FLORES code is not the ISO3 code we get above)
 bloom_lang_codes.append("cmn")  # == zho
+bloom_lang_codes.append("npi")  # == npe
+bloom_lang_codes.append("ory")  # == ori
+bloom_lang_codes.append("swh")  # == swa
 
 
 PREV_PROMPT = (
@@ -323,6 +327,8 @@ def add_langs(l1):
             continue
         elif l1_name == l2_name:
             continue
+
+        print(f"Doing {l1_name} and {l2_name}.")
 
         subset_name = f"{l1_code}-{l2_code}"
         template_collection = TemplateCollection()
