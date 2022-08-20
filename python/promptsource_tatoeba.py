@@ -892,29 +892,28 @@ for lang in BLOOM_LANGS.split("\n")[1:-1]:
 # Discrepencies
 bloom_lang_codes.append("cmn")  # == zho
 
-for lang_pair in _LanguagePairs:
+template_collection = TemplateCollection()
 
+def add_langs(lang_pair):
     language_1, language_2 = lang_pair.split("-")
 
     if language_1.split("_")[0] not in bloom_lang_codes or language_2.split("_")[0] not in bloom_lang_codes:
         print(f"Skipping as {language_1} or {language_2} was not pre-trained on.")
-        continue
+        return
     elif language_1 == language_2:
-        continue
-
-    template_collection = TemplateCollection()
+        return
     target_templates = template_collection.get_dataset("Helsinki-NLP/tatoeba_mt", lang_pair)
     try:
         lang_1_name = languages.get(part3=language_1.split("_")[0]).name
         lang_2_name = languages.get(part3=language_2.split("_")[0]).name
     except KeyError:
         print(f"Could not find code {language_1} or {language_2}. Skipping..")
-        continue
+        return
 
     template_name = "translate-this-" + language_1 + "-" + language_2
     jinja = (
-        f"Translate the following text from {lang_1_name} to {lang_2_name}"
-        + " {{ sourceString }}"
+        f"Translate the following text from {lang_1_name} to {lang_2_name}."
+        + "\n\nText: {{ sourceString }}\n\nTranslation:"
         + "||| {{ targetString }}"
     )
     target_template = Template(template_name, jinja, "")
@@ -922,10 +921,14 @@ for lang_pair in _LanguagePairs:
 
     template_name = "translate-this-" + language_2 + "-" + language_1
     jinja = (
-        f"Translate the following text from {lang_2_name} to {lang_1_name}"
-        + " {{ targetString }}"
+        f"Translate the following text from {lang_2_name} to {lang_1_name}."
+        + "\n\nText: {{ targetString }}\n\nTranslation:"
         + "||| {{ sourceString }}"
     )
     target_template = Template(template_name, jinja, "")
     target_templates.add_template(target_template)
 
+
+import multiprocessing
+with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+    pool.map(add_langs, _LanguagePairs)
